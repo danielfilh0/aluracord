@@ -1,46 +1,10 @@
 import React from "react";
+import { useRouter } from "next/router";
 import { Box, Button, Text, TextField, Image } from "@skynexui/components";
 import appConfig from "../config.json";
 
-const GlobalStyle = () => {
-    return (
-        <style global jsx>
-            {`
-                * {
-                    margin: 0;
-                    padding: 0;
-                    box-sizing: border-box;
-                    list-style: none;
-                }
-
-                body {
-                    font-family: "Open Sans", sans-serif;
-                }
-
-                /* App fit Height */
-                html,
-                body,
-                #__next {
-                    min-height: 100vh;
-                    display: flex;
-                    flex: 1;
-                }
-
-                #__next {
-                    flex: 1;
-                }
-
-                #__next > * {
-                    flex: 1;
-                }
-                /* ./App fit Height */
-            `}
-        </style>
-    );
-};
-
 const Title = (props) => {
-    const tag = props.tag || 'h1';
+    const tag = props.tag || "h1";
 
     return (
         <>
@@ -58,11 +22,11 @@ const Title = (props) => {
 };
 
 export default function Homepage() {
-    const username = "peas";
+    const [username, setUsername] = React.useState("");
+    const router = useRouter();
 
     return (
         <>
-            <GlobalStyle />
             <Box
                 styleSheet={{
                     display: "flex",
@@ -97,6 +61,10 @@ export default function Homepage() {
                     {/* Formulário */}
                     <Box
                         as="form"
+                        onSubmit={(event) => {
+                            event.preventDefault();
+                            router.push("/chat");
+                        }}
                         styleSheet={{
                             display: "flex",
                             flexDirection: "column",
@@ -119,6 +87,9 @@ export default function Homepage() {
                         </Text>
 
                         <TextField
+                            onChange={(event) =>
+                                setUsername(event.target.value)
+                            }
                             fullWidth
                             textFieldColors={{
                                 neutral: {
