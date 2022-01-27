@@ -37,10 +37,29 @@ const GlobalStyle = () => {
     );
 };
 
+const Message = () => {
+    return (
+        <style global jsx>
+            {`
+                .message .delete {
+                    opacity: 0;
+                    visibility: hidden;
+                }
+
+                .message:hover .delete {
+                    opacity: 1;
+                    visibility: visible;
+                }
+            `}
+        </style>
+    );
+}
+
 const MyApp = ({ Component, pageProps }) => {
     return (
         <>
             <GlobalStyle />
+            <Message />
             <Component {...pageProps} />
         </>
     );
