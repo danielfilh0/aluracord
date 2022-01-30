@@ -1,25 +1,72 @@
+import { useRouter } from "next/router";
 import { Box, Text, TextField, Image, Button } from "@skynexui/components";
 import IconButton from "@mui/material/IconButton";
 import DeleteIcon from "@mui/icons-material/Delete";
+import Author from "../src/components/Author";
 import React from "react";
 import appConfig from "../config.json";
+import ButtonSendSticker from "../src/components/ButtonSendSticker";
+
+import { createClient } from "@supabase/supabase-js";
+import Loading from "../src/components/Loading";
+
+const supabaseClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+
+function listenRealtimeMessages(addMessage) {
+    return supabaseClient
+        .from("messages")
+        .on("INSERT", (response) => {
+            addMessage(response.new);
+        })
+        .subscribe();
+}
 
 const ChatPage = () => {
     const [message, setMessage] = React.useState("");
     const [messagesList, setMessagesList] = React.useState([]);
+    const router = useRouter();
+    const user = router.query.username;
+
+    React.useEffect(() => {
+        supabaseClient
+            .from("messages")
+            .select("*")
+            .order("id", { ascending: false })
+            .then(({ data }) => {
+                setMessagesList(data);
+            });
+
+        listenRealtimeMessages((newMessage) => {
+            setMessagesList((actualValue) => {
+                return [newMessage, ...actualValue];
+            });
+        });
+    }, []);
 
     function handleNewMessage(newMessage) {
         const message = {
-            id: messagesList.length,
-            from: "danielfilh0",
+            from: user,
             text: newMessage,
         };
-        setMessagesList([message, ...messagesList]);
+
+        supabaseClient
+            .from("messages")
+            .insert([message])
+            .then(({ data }) => {
+            });
+
         setMessage("");
     }
 
     function deleteMessage(id) {
         const updatedList = messagesList.filter((item) => item.id !== id);
+        const messageRemoved = messagesList.filter((item) => item.id === id);
+
+        supabaseClient
+            .from("messages")
+            .delete()
+            .match({ id: messageRemoved[0].id })
+
         setMessagesList(updatedList);
     }
 
@@ -52,6 +99,8 @@ const ChatPage = () => {
                 }}
             >
                 <Header />
+
+                {!messagesList.length && <Loading />}
 
                 <Box
                     styleSheet={{
@@ -104,6 +153,13 @@ const ChatPage = () => {
                                     appConfig.theme.colors.neutrals[800],
                                 marginRight: "12px",
                                 color: appConfig.theme.colors.neutrals[200],
+                            }}
+                        />
+
+                        <ButtonSendSticker
+                            onStickerClick={(sticker) => {
+                                handleNewMessage(`:sticker: ${sticker} `);
+
                             }}
                         />
 
@@ -187,22 +243,28 @@ const MessageList = (props) => {
                             styleSheet={{
                                 display: "flex",
                                 justifyContent: "space-between",
+                                alignItems: "center",
                                 marginBottom: "8px",
                             }}
                         >
-                            <Box>
+                            <Box
+                                styleSheet={{
+                                    position: "relative",
+                                }}
+                            >
                                 <Image
                                     styleSheet={{
                                         width: "20px",
                                         height: "20px",
                                         borderRadius: "50%",
                                         display: "inline-block",
+                                        marginTop: "5px",
                                         marginRight: "8px",
                                     }}
                                     src={`https://github.com/${message.from}.png`}
                                 />
 
-                                <Text tag="strong">{message.from}</Text>
+                                <Author>{message.from}</Author>
 
                                 <Text
                                     styleSheet={{
@@ -229,7 +291,13 @@ const MessageList = (props) => {
                             </Box>
                         </Box>
 
-                        {message.text}
+                        {message.text.startsWith(":sticker: ") ? (
+                            <Image
+                                src={message.text.replace(":sticker: ", "")}
+                            />
+                        ) : (
+                            message.text
+                        )}
                     </Text>
                 );
             })}
