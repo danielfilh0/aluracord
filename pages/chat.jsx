@@ -10,13 +10,19 @@ import ButtonSendSticker from "../src/components/ButtonSendSticker";
 import { createClient } from "@supabase/supabase-js";
 import Loading from "../src/components/Loading";
 
-const supabaseClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+const supabaseClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 function listenRealtimeMessages(addMessage) {
     return supabaseClient
         .from("messages")
         .on("INSERT", (response) => {
             addMessage(response.new);
+        })
+        .on("DELETE", (response) => {
+            console.log(response.old);
         })
         .subscribe();
 }
@@ -26,6 +32,7 @@ const ChatPage = () => {
     const [messagesList, setMessagesList] = React.useState([]);
     const router = useRouter();
     const user = router.query.username;
+    const [openInfo, setOpenInfo] = React.useState(false);
 
     React.useEffect(() => {
         supabaseClient
@@ -52,20 +59,19 @@ const ChatPage = () => {
         supabaseClient
             .from("messages")
             .insert([message])
-            .then(({ data }) => {
-            });
+            .then(({ data }) => {});
 
         setMessage("");
     }
 
-    function deleteMessage(id) {
+    async function deleteMessage(id) {
         const updatedList = messagesList.filter((item) => item.id !== id);
-        const messageRemoved = messagesList.filter((item) => item.id === id);
 
-        supabaseClient
-            .from("messages")
-            .delete()
-            .match({ id: messageRemoved[0].id })
+        await supabaseClient.from("messages").delete().eq("id", id);
+
+        listenRealtimeMessages((newMessage) => {
+            console.log(newMessage);
+        });
 
         setMessagesList(updatedList);
     }
@@ -104,7 +110,6 @@ const ChatPage = () => {
 
                 <Box
                     styleSheet={{
-                        position: "relative",
                         display: "flex",
                         flex: 1,
                         height: "80%",
@@ -159,7 +164,6 @@ const ChatPage = () => {
                         <ButtonSendSticker
                             onStickerClick={(sticker) => {
                                 handleNewMessage(`:sticker: ${sticker} `);
-
                             }}
                         />
 
@@ -216,6 +220,7 @@ const MessageList = (props) => {
             tag="ul"
             styleSheet={{
                 overflow: "auto",
+                width: "100%",
                 display: "flex",
                 flexDirection: "column-reverse",
                 flex: 1,
@@ -229,6 +234,7 @@ const MessageList = (props) => {
                         key={message.id}
                         tag="li"
                         className="message"
+                        position="relative"
                         styleSheet={{
                             borderRadius: "5px",
                             padding: "6px",
@@ -247,11 +253,7 @@ const MessageList = (props) => {
                                 marginBottom: "8px",
                             }}
                         >
-                            <Box
-                                styleSheet={{
-                                    position: "relative",
-                                }}
-                            >
+                            <Box>
                                 <Image
                                     styleSheet={{
                                         width: "20px",

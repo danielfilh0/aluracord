@@ -15,6 +15,11 @@ const GlobalStyle = () => {
                     font-family: "Open Sans", sans-serif;
                 }
 
+                a {
+                    text-decoration: none;
+                    color: unset;
+                }
+
                 /* App fit Height */
                 html,
                 body,
@@ -32,6 +37,17 @@ const GlobalStyle = () => {
                     flex: 1;
                 }
                 /* ./App fit Height */
+
+                @keyframes fade {
+                    from {
+                        transform: translateX(-50px);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(initial);
+                        opacity: 1;
+                    }
+                }
             `}
         </style>
     );
